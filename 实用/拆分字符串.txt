@@ -1,0 +1,57 @@
+  Deal_Data$=Rec_Data$
+    '======
+    Length=LEN(Deal_Data$)
+    FOR I=1 TO Length   '"查找第1个 逗号
+       Judge$=MID$(Deal_Data$,I,1)
+       IF Judge$=";" THEN
+           Part1$=MID$(Deal_Data$,1,I-1)    '拆分第一部分字符，（标志）
+           Deal_Data$=MID$(Deal_Data$,I+1,Length-I)  
+           EXIT FOR
+       ENDIF
+    NEXT
+    '======
+     Length=LEN(Deal_Data$)
+     FOR I=1 TO Length   '"查找第2个 逗号
+       Judge$=MID$(Deal_Data$,I,1)
+       IF Judge$=";" THEN
+           Part2$=MID$(Deal_Data$,1,I-1)    '拆分第一部分字符，（标志）
+           Deal_Data$=MID$(Deal_Data$,I+1,Length-I)  
+           EXIT FOR
+       ENDIF
+    NEXT
+    '=====
+       Length=LEN(Deal_Data$)
+       FOR I=1 TO Length   '"查找第3个 逗号
+       Judge$=MID$(Deal_Data$,I,1)
+       IF Judge$=";" THEN
+           Part3$=MID$(Deal_Data$,1,I-1)    '拆分第一部分字符，（标志）
+           Deal_Data$=MID$(Deal_Data$,I+1,Length-I)  
+           EXIT FOR
+       ENDIF
+       NEXT
+
+
+'============================
+J%=1
+DIM A!(20)
+Rec_Data$="111;22;-33;44;-1.234;"
+   Deal_Data$=Rec_Data$
+    '======
+    Long%=LEN(Deal_Data$)
+    FOR I%=1 TO Long%   '"查找第1个 逗号
+       Judge$=MID$(Deal_Data$,I%,1)
+       IF Judge$=";" THEN
+           A!(J%)=VAL(MID$(Deal_Data$,1,I%-1))    '拆分第一部分字符，（标志）
+           Deal_Data$=MID$(Deal_Data$,I%+1,Long%-I%)  
+           PRINT A!(J%)
+           J%=J%+1
+           Long%=LEN(Deal_Data$)
+           I%=0
+       ENDIF
+    NEXT
+    LOC1(P1)=A!(1)
+    LOC2(P1)=A!(2)
+    LOC3(P1)=A!(3)
+    LOC4(P1)=A!(4)
+    LOC5(P1)=A!(5)
+    HOLD

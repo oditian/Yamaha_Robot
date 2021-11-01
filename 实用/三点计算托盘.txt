@@ -1,0 +1,37 @@
+'==========计算托盘点位==================
+Row%=3
+Column%=4
+RowSpacing_num%=Row%-1  '行间距
+ColumnSpacing_num%=Column%-1  '列间距
+Posx1!=LOC1(P[1000+100*SGI1+1])
+Posy1!=LOC2(P[1000+100*SGI1+1])
+Posx2!=LOC1(P[1000+100*SGI1+2])
+Posy2!=LOC2(P[1000+100*SGI1+2])
+Posx3!=LOC1(P[1000+100*SGI1+3])
+Posy3!=LOC2(P[1000+100*SGI1+3])
+IF RowSpacing_num%=0 THEN
+   RowSpacing_x!=0
+   RowSpacing_y!=0
+ELSEIF RowSpacing_num%>0 THEN
+   RowSpacing_x!=(Posx3!-Posx1!)/RowSpacing_num%
+   RowSpacing_y!=(Posy3!-Posy1!)/RowSpacing_num%
+ENDIF
+IF ColumnSpacing_num%=0 THEN
+   ColumnSpacing_x!=0
+   ColumnSpacing_y!=0
+ELSEIF ColumnSpacing_num%>0 THEN
+   ColumnSpacing_x!=(Posx2!-Posx1!)/ColumnSpacing_num%
+   ColumnSpacing_y!=(Posy2!-Posy1!)/ColumnSpacing_num%
+ENDIF
+FOR I=1 TO 40   '初始化40个点位，看情况加
+    P[100+I]=0.0 0 0 0 0 0 3
+NEXT
+FOR I=1 TO Row% 
+    FOR J=1 TO Column%
+        CacuNum%=J+(I-1)*Column%  '总数
+        P[100+CacuNum%]=P[1000+100*SGI1+1]
+        LOC1(P[100+CacuNum%])=LOC1(P[1000+100*SGI1+1])+(J-1)*ColumnSpacing_x!+(I-1)*RowSpacing_x!  '根据机械手方向加减X,Y
+        LOC2(P[100+CacuNum%])=LOC2(P[1000+100*SGI1+1])+(J-1)*ColumnSpacing_y!+(I-1)*RowSpacing_y!
+        '====
+    NEXT
+NEXT

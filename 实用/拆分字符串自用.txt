@@ -1,0 +1,54 @@
+CALL *SplitString(Rec_Data$,Receive$())
+REM 拆分字符串
+SUB *SplitString(Rec_Data$,Receive$())
+    PRINT "接收到数据:";Rec_Data$    
+J%=1
+Split$=";"
+Split1$=";"
+Split2$=","
+Deal_Data$=""
+Long%=0 
+IF MID$(Rec_Data$,LEN(Rec_Data$),1) <> Split$ THEN
+   Deal_Data$=Rec_Data$+Split$
+ELSE
+   Deal_Data$=Rec_Data$
+ENDIF
+    Long%=LEN(Deal_Data$)
+    '=====================
+    FOR I%=1 TO Long%   
+       Judge$=MID$(Deal_Data$,I%,1)
+       IF Judge$=Split1$ OR Judge$=Split2$ THEN
+           Receive$(J%)=MID$(Deal_Data$,1,I%-1)   
+           Deal_Data$=MID$(Deal_Data$,I%+1,Long%-I%)  
+           Long%=LEN(Deal_Data$)
+           J%=J%+1
+           I%=1
+       ENDIF
+    NEXT 
+ END SUB
+
+'拆分字符串
+*SplitString:
+J%=1
+Split$=";"
+DIM Receive$(20)  
+   'Rec_Data$="345;-89.0;345;677;890"
+   Deal_Data$=Rec_Data$+Split$
+    '======
+    Long%=LEN(Deal_Data$)
+    FOR I%=1 TO Long%   
+       Judge$=MID$(Deal_Data$,I%,1)
+       IF Judge$=Split$ THEN
+           Receive$(J%)=MID$(Deal_Data$,1,I%-1)   
+           Deal_Data$=MID$(Deal_Data$,I%+1,Long%-I%)  
+           Long%=LEN(Deal_Data$)
+           J%=J%+1
+           I%=1
+       ENDIF
+    NEXT 
+    CCD1$=Receive$(1)
+    CCD2$=Receive$(2)
+    CCD3$=Receive$(3)
+    CCD4$=Receive$(4)
+    CCD5$=Receive$(5)
+    HOLD

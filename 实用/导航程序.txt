@@ -1,0 +1,68 @@
+'
+*SNVS:
+    SEND "SNVS 0" TO CMU
+    SEND CMU TO DATA$
+    IF DATA$="SNPS 0" THEN
+       GOSUB *SendRobotPos 
+       SEND Robot_Pos$ TO CMU
+       SEND CMU TO DATA$
+       IF DATA$="SNVS 0" THEN
+           HOLD
+       ENDIF
+    ENDIF '·ÃÎÊmm×ø±ê
+RETURN    
+'======
+*SNVI:
+    SEND "SNVI 0 -1" TO CMU
+    SEND CMU TO DATA$
+     IF DATA$="SNVI 0" THEN
+        HOLD
+     ELSE
+       LOC1(P100)=VAL(MID$(DATA$,6,11))/10000.00
+       LOC2(P100)=VAL(MID$(DATA$,18,11))/10000.00
+       LOC4(P100)=VAL(MID$(DATA$,30,11))/100000.00
+   ENDIF
+RETURN
+    ''
+*SendRobotPos:
+     C_POSX%=LOC1(WHRXY)*1000      
+     C_POSY%=LOC2(WHRXY)*1000
+     C_POSR%=LOC4(WHRXY)*1000
+     LONG_POSX%=LEN(STR$(ABS(C_POSX%)))  
+     LONG_POSY%=LEN(STR$(ABS(C_POSY%)))
+     LONG_POSR%=LEN(STR$(ABS(C_POSR%)))
+     C_POSX$="000000000"+STR$(ABS(C_POSX%))    
+     C_POSY$="000000000"+STR$(ABS(C_POSY%))
+     C_POSR$="000000000"+STR$(ABS(C_POSR%))
+     BX$=RIGHT$(C_POSX$,7)                
+     BY$=RIGHT$(C_POSY$,7)
+     BR$=RIGHT$(C_POSR$,7)
+     '===============
+     IF LONG_POSX%<=3 THEN             
+        PX$="0"+"."+RIGHT$(BX$,3)
+     ELSE     
+        PX$=MID$(BX$,7-LONG_POSX%+1,LONG_POSX%-3)+"."+RIGHT$(BX$,3)
+     ENDIF
+     IF LONG_POSY%<=3 THEN
+        PY$="0"+"."+RIGHT$(BY$,3)
+     ELSE     
+        PY$=MID$(BY$,7-LONG_POSY%+1,LONG_POSY%-3)+"."+RIGHT$(BY$,3)
+     ENDIF
+     IF LONG_POSR%<=3 THEN
+        PR$="0"+"."+RIGHT$(BR$,3)
+     ELSE     
+        PR$=MID$(BR$,7-LONG_POSR%+1,LONG_POSR%-3)+"."+RIGHT$(BR$,3)
+     ENDIF
+     '===================
+    IF  C_POSX%<0 THEN           
+        PX$="-"+PX$
+    ENDIF
+    IF  C_POSY%<0 THEN
+        PY$="-"+PY$
+    ENDIF
+    IF  C_POSR%<0 THEN
+        PR$="-"+PR$
+    ENDIF
+    '======================
+    Robot_Pos$="SNPS 0 "+PX$+" "+PY$+" "+PR$
+RETURN   

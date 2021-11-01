@@ -1,0 +1,200 @@
+'********************一键标定程序【下相机】***********************
+'**************************版本V1.1.0*****************************
+'版本V1.1.0更新支持双工位定位  工位2拍照位默认 P306
+'
+'注意：此标定程序仅支持一位数的设置
+'CMD: 1:旋转标定 2:平移标定 3：复位初始化
+'ROTATE_TOTAL:9,  旋转总数量
+'TRANSLATION_TOTAL:9, 平移总数量
+'ROTATE_NUM:9, 旋转有效数量
+'TRANSLATION_NUM:9, 平移有效数量
+'接收数据解析: CMD:1,ROTATE_TOTAL:9,TRANSLATION_TOTAL:9,ROTATE_NUM:9,TRANSLATION_NUM:9,
+'默认P[300]作为拍照位
+'P[301]当前位置
+'***************************参数设置******************************
+X!=3'X方向移动最小值
+Y!=3'Y方向移动最小值
+A!=2'旋转移动最小值
+'
+CURRENT_POS=301'实际点位
+'*************************** 请选择标定工位 *******************************
+STA=1       '工位选择
+*MAIN:
+'*************************** 工位1 *******************************
+    IF STA=1 THEN 
+        P[PHOTO]=P[300]'拍照位赋值
+'*************************** 工位2 *******************************
+    ELSEIF STA=2 THEN
+        P[PHOTO]=P[306]'拍照位赋值
+    ELSE
+        GOTO *MAIN
+    ENDIF
+'
+'***************************运行程序******************************
+'机器人当前位置的理想坐标
+ACTUAL_CURRENT_X!=0
+ACTUAL_CURRENT_Y!=0
+ACTUAL_CURRENT_A!=0
+MOTOR ON 
+ON ERROR GOTO *ERR1
+'***************'开始连接通讯***************
+*ST_GP0:
+    MO(40)=0
+    CLOSE GP0                  '关闭网络端口GP0
+    DELAY 100
+    OPEN GP0                   '打开网络端口GP0
+    DELAY 100
+    MO(40)=1   
+*RECV: 
+    SEND GP0 TO DATA$          '等待GP0接受数据
+    PRINT "接收到数据:"+DATA$
+    '//解析命令字符串
+    CMD%=VAL(MID$(DATA$,5,1))
+    IF CMD%<>0 THEN
+        '解析视觉数据
+        ROTATE_TOTAL%=VAL(MID$(DATA$,20,1))
+        TRANSLATION_TOTAL%=VAL(MID$(DATA$,40,1))
+        ROTATE_NUM%=VAL(MID$(DATA$,53,1))
+        TRANSLATION_NUM%=VAL(MID$(DATA$,71,1))
+        '打印接收的数据
+        PRINT "接收视觉数据:CMD:";CMD%;"ROTATE_TOTAL:";ROTATE_TOTAL%;",TRANSLATION_TOTAL:";TRANSLATION_TOTAL%;",ROTATE_NUM:";ROTATE_NUM%;",TRANSLATION_NUM:";TRANSLATION_NUM%;","
+        '设置CURRENT_POS点位为拍照位
+        P[CURRENT_POS]=P[PHOTO]
+        SELECT CASE CMD%
+            CASE 1'旋转标定 
+                '如果小于旋转总数一半 正向旋转 否则反向
+                ROTATE_HALF%=ROTATE_TOTAL%/2
+                ROTATE_ANGLE!=0'实际需要旋转的角度
+                IF ROTATE_NUM% <= ROTATE_HALF% THEN
+                    '正向包括原点一张
+                    ROTATE_ANGLE!=ROTATE_NUM%*A!
+                ELSE
+                    '反向
+                    ROTATE_ANGLE!=-1*ROTATE_NUM%*A!+ROTATE_HALF%
+                ENDIF 
+                LOC4(P[CURRENT_POS]) =LOC4(P[CURRENT_POS])+ROTATE_ANGLE!           
+            CASE 2'平移标定 3*3
+               TRANSL_X%= TRANSLATION_NUM% MOD 3
+               TRANSL_Y%= TRANSLATION_NUM%/3
+               REALITY_X!=TRANSL_X%*X!
+               REALITY_Y!=TRANSL_Y%*Y!
+               LOC1(P[CURRENT_POS]) =LOC1(P[CURRENT_POS])+REALITY_X!
+               LOC2(P[CURRENT_POS]) =LOC2(P[CURRENT_POS])+REALITY_Y!
+            CASE 3'停止标定，复位
+                GOTO *ST_GP0
+        END SELECT
+        IF CMD%<>3 THEN
+            '走点位
+            MOVE P,P[CURRENT_POS]
+            WAIT ARM
+            DELAY 2000
+            GOSUB *SEND_POS
+        ENDIF  
+    ENDIF
+    GOTO *RECV 
+'
+'发送当前坐标及其拍照位
+*SEND_POS:
+    'REQUEST:1;CURREN_POS:X,Y,A;PHOTO_POS:X,Y,A;
+    '当前位置
+     C_POSX%=(LOC1(P[CURRENT_POS]))*1000    '实际X值放大1000倍（整数）
+     C_POSY%=(LOC2(P[CURRENT_POS]))*1000    '实际Y值放大1000倍（整数）
+     C_POSR%=(LOC4(P[CURRENT_POS]))*1000    '实际R值放大1000倍（整数）
+     LONG_POSX%=LEN(STR$(ABS(C_POSX%)))      '先计算绝对值，后将数值转换成字符串，再获取实际字符串的长度后存储于变量中
+     LONG_POSY%=LEN(STR$(ABS(C_POSY%)))
+     LONG_POSR%=LEN(STR$(ABS(C_POSR%)))
+     C_POSX$="000000000"+STR$(ABS(C_POSX%))  '先计算绝对值，后将数值转换成字符串，再将实际数值前补充字符，便于下一步抽取固定字符
+     C_POSY$="000000000"+STR$(ABS(C_POSY%))
+     C_POSR$="000000000"+STR$(ABS(C_POSR%))
+     BX$=RIGHT$(C_POSX$,7)                   '从 C_POSX$ 右侧抽取 7个固定长度字符 赋值给 BX$
+     BY$=RIGHT$(C_POSY$,7)
+     BR$=RIGHT$(C_POSR$,7)
+     '===============
+     IF LONG_POSX%<=3 THEN                   '判断实际字符串的长度
+        CURREN_POS_X$="0"+"."+RIGHT$(BX$,3)            '若长度小于等于3，则字符前补充“0”+“.”
+     ELSE                                    '否则从已处理的固定长度为7的字符中抽取相应整数部分字符，再补充“.”+“三位小数部分”
+        CURREN_POS_X$=MID$(BX$,7-LONG_POSX%+1,LONG_POSX%-3)+"."+RIGHT$(BX$,3)
+     ENDIF
+     IF LONG_POSY%<=3 THEN
+        CURREN_POS_Y$="0"+"."+RIGHT$(BY$,3)
+     ELSE     
+        CURREN_POS_Y$=MID$(BY$,7-LONG_POSY%+1,LONG_POSY%-3)+"."+RIGHT$(BY$,3)
+     ENDIF
+     IF LONG_POSR%<=3 THEN
+        CURREN_POS_A$="0"+"."+RIGHT$(BR$,3)
+     ELSE     
+        CURREN_POS_A$=MID$(BR$,7-LONG_POSR%+1,LONG_POSR%-3)+"."+RIGHT$(BR$,3)
+     ENDIF
+     '===================
+    IF  C_POSX%<0 THEN     '判断实际数值的正负
+        CURREN_POS_X$="-"+ CURREN_POS_X$        '若际实际数值为负值，则再处理后的字符前补充“-”符号
+    ENDIF
+    IF  C_POSY%<0 THEN
+        CURREN_POS_Y$="-"+CURREN_POS_Y$
+    ENDIF
+'
+    IF  C_POSR%<0 THEN
+        CURREN_POS_A$="-"+CURREN_POS_A$
+    ENDIF
+    '======================
+    '拍照位
+    C_POSX%=(LOC1(P[PHOTO]))*1000    '实际X值放大1000倍（整数）
+     C_POSY%=(LOC2(P[PHOTO]))*1000    '实际Y值放大1000倍（整数）
+     C_POSR%=(LOC4(P[PHOTO]))*1000    '实际R值放大1000倍（整数）
+     LONG_POSX%=LEN(STR$(ABS(C_POSX%)))      '先计算绝对值，后将数值转换成字符串，再获取实际字符串的长度后存储于变量中
+     LONG_POSY%=LEN(STR$(ABS(C_POSY%)))
+     LONG_POSR%=LEN(STR$(ABS(C_POSR%)))
+     C_POSX$="000000000"+STR$(ABS(C_POSX%))  '先计算绝对值，后将数值转换成字符串，再将实际数值前补充字符，便于下一步抽取固定字符
+     C_POSY$="000000000"+STR$(ABS(C_POSY%))
+     C_POSR$="000000000"+STR$(ABS(C_POSR%))
+     BX$=RIGHT$(C_POSX$,7)                   '从 C_POSX$ 右侧抽取 7个固定长度字符 赋值给 BX$
+     BY$=RIGHT$(C_POSY$,7)
+     BR$=RIGHT$(C_POSR$,7)
+     '===============
+     IF LONG_POSX%<=3 THEN                   '判断实际字符串的长度
+        PHOTO_POS_X$="0"+"."+RIGHT$(BX$,3)            '若长度小于等于3，则字符前补充“0”+“.”
+     ELSE                                    '否则从已处理的固定长度为7的字符中抽取相应整数部分字符，再补充“.”+“三位小数部分”
+        PHOTO_POS_X$=MID$(BX$,7-LONG_POSX%+1,LONG_POSX%-3)+"."+RIGHT$(BX$,3)
+     ENDIF
+     IF LONG_POSY%<=3 THEN
+        PHOTO_POS_Y$="0"+"."+RIGHT$(BY$,3)
+     ELSE     
+        PHOTO_POS_Y$=MID$(BY$,7-LONG_POSY%+1,LONG_POSY%-3)+"."+RIGHT$(BY$,3)
+     ENDIF
+     IF LONG_POSR%<=3 THEN
+        PHOTO_POS_A$="0"+"."+RIGHT$(BR$,3)
+     ELSE     
+        PHOTO_POS_A$=MID$(BR$,7-LONG_POSR%+1,LONG_POSR%-3)+"."+RIGHT$(BR$,3)
+     ENDIF
+     '===================
+    IF  C_POSX%<0 THEN     '判断实际数值的正负
+        PHOTO_POS_X$="-"+ PHOTO_POS_X$        '若际实际数值为负值，则再处理后的字符前补充“-”符号
+    ENDIF
+    IF  C_POSY%<0 THEN
+        PHOTO_POS_Y$="-"+PHOTO_POS_Y$
+    ENDIF
+'
+    IF  C_POSR%<0 THEN
+        PHOTO_POS_A$="-"+PHOTO_POS_A$
+    ENDIF
+    STR_CURRENT_POS$="CURREN_POS:"+CURREN_POS_X$+","+CURREN_POS_Y$+","+CURREN_POS_A$+";"
+    STR_PHOTO_POS$="PHOTO_POS:"+PHOTO_POS_X$+","+PHOTO_POS_Y$+","+PHOTO_POS_A$+";"
+    SEND_DATA$="REQUEST:1"+STR_CURRENT_POS$+STR_PHOTO_POS$
+    PRINT "发送数据:"+SEND_DATA$
+    SEND SEND_DATA$ TO GP0
+RETURN
+'*********************通讯连接检测************************************************
+*ERR1:
+IF ERR=&H000E00E7 THEN GOTO *NEXT1   '14.231 确认是否发生了端口打开失败的错误
+    ON ERROR GOTO 0 ' 显示错误并停止执行
+*NEXT1:
+IF MO(40)=0 THEN  '第一次连接，通讯断开，重连
+    PRINT "端口打开失败"
+    DELAY 1000
+    RESUME *ST_GP0
+ELSE
+    PRINT "端口打开失败"
+    DELAY 1000
+    RESUME *ST_GP0
+ENDIF
+ON ERROR GOTO 0

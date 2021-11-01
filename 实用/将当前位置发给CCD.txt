@@ -1,0 +1,53 @@
+     C_POSX%=LOC1(WHRXY)*1000      '将点位扩大1000
+     C_POSY%=LOC2(WHRXY)*1000
+     C_POSZ%=LOC3(WHRXY)*1000
+     C_POSR%=LOC4(WHRXY)*1000
+     LONG_POSX%=LEN(STR$(ABS(C_POSX%)))  ' 获取点位的长度
+     LONG_POSY%=LEN(STR$(ABS(C_POSY%)))
+     LONG_POSZ%=LEN(STR$(ABS(C_POSZ%)))
+     LONG_POSR%=LEN(STR$(ABS(C_POSR%)))
+     C_POSX$="000000000"+STR$(ABS(C_POSX%))    '补零
+     C_POSY$="000000000"+STR$(ABS(C_POSY%))
+     C_POSZ$="000000000"+STR$(ABS(C_POSZ%))
+     C_POSR$="000000000"+STR$(ABS(C_POSR%))
+     BX$=RIGHT$(C_POSX$,7)                '取右7位
+     BY$=RIGHT$(C_POSY$,7)
+     BZ$=RIGHT$(C_POSZ$,7)
+     BR$=RIGHT$(C_POSR$,7)
+     '===============
+     IF LONG_POSX%<=3 THEN             '长度小于等于3，前面补零加小数点
+        PX$="0"+"."+RIGHT$(BX$,3)
+     ELSE     
+        PX$=MID$(BX$,7-LONG_POSX%+1,LONG_POSX%-3)+"."+RIGHT$(BX$,3)
+     ENDIF
+     IF LONG_POSY%<=3 THEN
+        PY$="0"+"."+RIGHT$(BY$,3)
+     ELSE     
+        PY$=MID$(BY$,7-LONG_POSY%+1,LONG_POSY%-3)+"."+RIGHT$(BY$,3)
+     ENDIF
+     IF LONG_POSZ%<=3 THEN
+        PZ$="0"+"."+RIGHT$(BZ$,3)
+     ELSE     
+        PZ$=MID$(BZ$,7-LONG_POSZ%+1,LONG_POSZ%-3)+"."+RIGHT$(BZ$,3)
+     ENDIF
+     IF LONG_POSR%<=3 THEN
+        PR$="0"+"."+RIGHT$(BR$,3)
+     ELSE     
+        PR$=MID$(BR$,7-LONG_POSR%+1,LONG_POSR%-3)+"."+RIGHT$(BR$,3)
+     ENDIF
+     '===================
+    IF  C_POSX%<0 THEN             '小于0加负号
+        PX$="-"+PX$
+    ENDIF
+    IF  C_POSY%<0 THEN
+        PY$="-"+PY$
+    ENDIF
+    IF  C_POSZ%<0 THEN
+        PZ$="-"+PZ$
+    ENDIF
+    IF  C_POSR%<0 THEN
+        PR$="-"+PR$
+    ENDIF
+    '======================
+    Robot_Pos$=PR$+";"+PX$+";"+PY$+";"+PZ$+";"
+    PRINT "机器人位置 X Y Z：",Robot_Pos$
