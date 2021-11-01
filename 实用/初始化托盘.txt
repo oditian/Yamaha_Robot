@@ -1,12 +1,12 @@
 FOR I=1 TO  Column% 
         FOR J=1 TO Row% 
-            Num%=J+(I-1)*Row%      '×ÜÊý
+            Num%=J+(I-1)*Row%      
             P[10+Num%]=P1
         IF Num%<=Row% THEN
-           LOC1(P[10+Num%])=LOC1(P1)-(J-1)*Row_Space!  '(I-1)*Column_Space! '¼õx
+           LOC1(P[10+Num%])=LOC1(P1)-(J-1)*Row_Space!  '(I-1)*Column_Space! 
         ELSE 
-            LOC1(P[10+Num%])=LOC1(P1)-(J-1)*Row_Space!     '¼õX
-            LOC2(P[10+Num%])=LOC2(P1)+(I-1)*Column_Space!  '¼ÓY
+            LOC1(P[10+Num%])=LOC1(P1)-(J-1)*Row_Space!     
+            LOC2(P[10+Num%])=LOC2(P1)+(I-1)*Column_Space!  
         ENDIF
         NEXT
    NEXT 
